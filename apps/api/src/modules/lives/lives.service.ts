@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLiveDto, PinProductDto, FlashOrderDto } from './dto/lives.dto';
 import { LiveStatus, FlashOrderStatus } from '@prisma/client';
 import * as crypto from 'crypto';
+import { AccessToken } from 'livekit-server-sdk';
 
 @Injectable()
 export class LivesService {
@@ -96,9 +97,19 @@ export class LivesService {
     const livekitApiSecret = process.env.LIVEKIT_API_SECRET || 'secret';
     const livekitUrl = process.env.LIVEKIT_URL || 'ws://localhost:7880';
 
-    // Génération du token JWT WebRTC conforme à la spécification LiveKit
-    // En production : utilise import { AccessToken } from 'livekit-server-sdk';
-    const token = `livekit_token_${isHost ? 'host' : 'viewer'}_${userId}_${Date.now()}`;
+    // Génération du token JWT WebRTC signé (le vendeur publie, les spectateurs regardent)
+    const accessToken = new AccessToken(livekitApiKey, livekitApiSecret, {
+      identity: userId,
+      ttl: '4h',
+    });
+    accessToken.addGrant({
+      roomJoin: true,
+      room: live.livekitRoom,
+      canPublish: isHost,
+      canSubscribe: true,
+      canPublishData: true,
+    });
+    const token = await accessToken.toJwt();
 
     return {
       token,

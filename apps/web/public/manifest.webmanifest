@@ -1,0 +1,10 @@
+{
+  "name": "e-hetsena",
+  "short_name": "e-hetsena",
+  "description": "Marketplace Vidéo & Live Shopping pour Madagascar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "fr"
+}

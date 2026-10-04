@@ -1,10 +1,6 @@
 {
   "name": "e-hetsena",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -13,7 +9,8 @@
     "db:studio": "pnpm --filter @e-hetsena/database db:studio"
   },
   "devDependencies": {
-    "turbo": "^2.0.0"
+    "turbo": "^2.5.0",
+    "typescript": "^5.6.3"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.15.9"
 }

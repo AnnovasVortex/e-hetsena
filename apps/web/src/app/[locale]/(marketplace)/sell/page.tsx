@@ -18,7 +18,7 @@ export default function SellPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number | ''>('');
-  const [category, setCategory] = useState(CATEGORIES[0].id);
+  const [category, setCategory] = useState<string>(CATEGORIES[0].id);
   const [condition, setCondition] = useState<string>(ITEM_CONDITIONS[1].id);
   const [size, setSize] = useState('');
   const [city, setCity] = useState<string>(MADAGASCAR_CITIES[0]);

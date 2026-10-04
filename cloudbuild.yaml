@@ -1,0 +1,22 @@
+# Construit et publie une image (api ou web) dans Artifact Registry.
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_APP=api,_IMAGE=europe-west1-docker.pkg.dev/tairoraims/e-hetsena/api:TAG
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_APP=web,_IMAGE=...,_API_URL=https://e-hetsena-api-xxxx.run.app
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - apps/${_APP}/Dockerfile
+      - --build-arg
+      - API_URL=${_API_URL}
+      - -t
+      - ${_IMAGE}
+      - .
+images:
+  - ${_IMAGE}
+substitutions:
+  _API_URL: ''
+options:
+  machineType: E2_HIGHCPU_8

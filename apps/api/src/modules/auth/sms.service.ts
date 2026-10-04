@@ -16,8 +16,13 @@ export class SmsService {
   async sendOtp(phoneNumber: string, code: string): Promise<boolean> {
     const message = `Kaody e-hetsena anao: ${code}. Aza omena olona ity kaody ity. (Valable 5 minutes)`;
     const isDev = process.env.NODE_ENV !== 'production';
+    const hasGateway = !!process.env.SMS_GATEWAY_URL;
 
-    if (isDev) {
+    // Sans passerelle configurée, le code est écrit dans les logs (s'arrête dès que SMS_GATEWAY_URL est défini)
+    if (isDev || !hasGateway) {
+      if (!isDev) {
+        this.logger.warn('SMS_GATEWAY_URL absent : code OTP écrit dans les logs au lieu d\'être envoyé');
+      }
       this.logger.warn('=============================================');
       this.logger.warn(`📱 [SIMULATION SMS MADAGASCAR]`);
       this.logger.warn(`Destinataire : ${phoneNumber}`);
