@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation';
 import { PhoneStep } from '@/components/auth/PhoneStep';
 import { OtpStep } from '@/components/auth/OtpStep';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
+import { authFetch, storeUser } from '@/lib/session';
+
+/** Page à rouvrir après connexion (?next=/sell), limitée aux chemins internes */
+function getNextPath(): string {
+  const next = new URLSearchParams(window.location.search).get('next');
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+}
 
 type AuthStep = 'PHONE' | 'OTP' | 'PROFILE_COMPLETION';
 
@@ -67,7 +74,7 @@ export default function LoginPage() {
       if (data.isNewUser) {
         setStep('PROFILE_COMPLETION');
       } else {
-        router.push('/');
+        router.push(getNextPath());
       }
     } catch (err: any) {
       setError(err.message);
@@ -81,17 +88,20 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('ehetsena_token');
-      await fetch('/api/users/profile', {
+      const res = await authFetch('/api/users/profile', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullName, city }),
       });
 
-      router.push('/');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const message = Array.isArray(data.message) ? data.message[0] : data.message;
+        throw new Error(message || 'Tsy voatahiry ny mombamomba anao (Profil non enregistré)');
+      }
+
+      storeUser(await res.json());
+      router.push(getNextPath());
     } catch (err: any) {
       setError(err.message);
     } finally {

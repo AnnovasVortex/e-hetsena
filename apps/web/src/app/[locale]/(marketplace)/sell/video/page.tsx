@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authFetch, isLoggedIn, loginUrl } from '@/lib/session';
 import { VideoRecorderModal } from '@/components/video/VideoRecorderModal';
 import { ResilientVideoUploader, UploadProgress } from '@/lib/tus-uploader';
 import { Video, ArrowLeft, RefreshCw, CheckCircle2, ShieldAlert } from 'lucide-react';
@@ -37,14 +38,14 @@ export default function CreateVideoPage() {
     setErrorMessage(null);
 
     try {
-      const token = localStorage.getItem('ehetsena_token');
+      if (!isLoggedIn()) {
+        router.push(loginUrl('/sell/video'));
+        return;
+      }
       // 1. Demande de réservation d'upload côté NestJS
-      const initRes = await fetch('/api/videos/create-upload', {
+      const initRes = await authFetch('/api/videos/create-upload', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           durationSeconds: duration,
           thumbnailUrl: thumbnailUrl || 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=500',

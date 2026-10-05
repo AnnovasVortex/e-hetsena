@@ -157,6 +157,22 @@ export class LivesService {
   }
 
   /**
+   * Fin du live : il disparaît des bulles d'accueil
+   */
+  async endLive(hostId: string, liveId: string) {
+    const live = await this.prisma.liveSession.findUnique({ where: { id: liveId } });
+
+    if (!live || live.hostId !== hostId) {
+      throw new ForbiddenException('Seul le vendeur peut terminer ce live');
+    }
+
+    return this.prisma.liveSession.update({
+      where: { id: liveId },
+      data: { status: LiveStatus.ENDED, endedAt: new Date() },
+    });
+  }
+
+  /**
    * 5. Moteur Commande Flash « RAISIKO ! / JE PRENDS ! » (File d'attente FIFO anti-doublon)
    */
   async handleFlashOrder(buyerId: string, liveId: string, dto: FlashOrderDto) {

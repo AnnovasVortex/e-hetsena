@@ -1,4 +1,4 @@
-# Préparation GCP d'e-hetsena (projet tairoraims) : base, secrets et droits IAM.
+﻿# Préparation GCP d'e-hetsena (projet tairoraims) : base, secrets et droits IAM.
 # Ne contient aucun secret : les mots de passe sont générés ici et vont directement dans Secret Manager.
 #
 # Lancement (contourne la stratégie d'exécution pour ce seul script) :

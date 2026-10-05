@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateVideoUploadDto {
   @IsOptional()
@@ -14,4 +14,11 @@ export class CreateVideoUploadDto {
   @IsNotEmpty()
   @IsString()
   thumbnailUrl: string;
+}
+
+export class CreateCommentDto {
+  @IsNotEmpty({ message: 'Hafatra foana (Commentaire vide)' })
+  @IsString()
+  @MaxLength(300, { message: 'Commentaire trop long (max 300 caractères)' })
+  content: string;
 }

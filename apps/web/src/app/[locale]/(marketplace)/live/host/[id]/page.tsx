@@ -1,58 +1,65 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { LiveHostView, HostLiveProduct } from '@/components/live/LiveHostView';
+import { getStoredUser } from '@/lib/session';
 
 export default function LiveHostPage() {
   const params = useParams();
-  const liveId = (params?.id as string) || 'host-live-1';
+  const liveId = params?.id as string;
 
-  // Liste des produits préparés par le vendeur pour son live
-  const [products] = useState<HostLiveProduct[]>([
-    {
-      id: 'lp-1',
-      isPinned: true,
-      article: {
-        id: 'art-1',
-        title: 'Veste Jean Vintage oversize brodée',
-        price: 35000,
-        images: [
-          { url: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=500' },
-        ],
-      },
-    },
-    {
-      id: 'lp-2',
-      isPinned: false,
-      article: {
-        id: 'art-2',
-        title: 'Sac artisanal en Raphia tressé main',
-        price: 20000,
-        images: [
-          { url: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=500' },
-        ],
-      },
-    },
-    {
-      id: 'lp-3',
-      isPinned: false,
-      article: {
-        id: 'art-3',
-        title: 'Baskets Nike Air Max 90 originales',
-        price: 120000,
-        images: [
-          { url: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=500' },
-        ],
-      },
-    },
-  ]);
+  const [live, setLive] = useState<{ title: string; products: HostLiveProduct[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  return (
-    <LiveHostView
-      liveId={liveId}
-      title="Vente Friperie & Artisanat en Direct"
-      products={products}
-    />
-  );
+  // Produits réellement associés au live (créé depuis /live)
+  useEffect(() => {
+    fetch(`/api/lives/${liveId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => {
+        if (data.host?.id !== getStoredUser()?.id) {
+          setError('Ny mpivarotra ihany no afaka mitantana ity Live ity (Réservé au vendeur de ce live)');
+          return;
+        }
+        if (data.status !== 'LIVE') {
+          setError('Efa nifarana ity Live ity (Ce live est terminé)');
+          return;
+        }
+        setLive({
+          title: data.title,
+          products: data.products.map((p: any) => ({
+            id: p.id,
+            isPinned: p.isPinned,
+            article: p.article,
+          })),
+        });
+      })
+      .catch(() => setError('Tsy hita ny Live (Live introuvable)'));
+  }, [liveId]);
+
+  if (error) {
+    return (
+      <div className="h-screen bg-black text-white flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-sm">{error}</p>
+        <Link href="/live" className="px-5 py-2.5 rounded-2xl bg-[#D35400] text-white text-sm font-bold">
+          Hiverina (Retour aux lives)
+        </Link>
+      </div>
+    );
+  }
+
+  if (!live) {
+    return (
+      <div className="h-screen w-full bg-black flex items-center justify-center text-white text-xs">
+        <div className="w-6 h-6 border-2 border-[#D35400] border-t-transparent rounded-full animate-spin mr-2" />
+        <span>Manomana ny Live... (Préparation du live...)</span>
+      </div>
+    );
+  }
+
+  return <LiveHostView liveId={liveId} title={live.title} products={live.products} />;
 }

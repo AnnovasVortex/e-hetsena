@@ -21,7 +21,9 @@ export class SmsService {
     // Sans passerelle configurée, le code est écrit dans les logs (s'arrête dès que SMS_GATEWAY_URL est défini)
     if (isDev || !hasGateway) {
       if (!isDev) {
-        this.logger.warn('SMS_GATEWAY_URL absent : code OTP écrit dans les logs au lieu d\'être envoyé');
+        // Une seule ligne par code, filtrable dans Cloud Logging (deploy/otp-logs.ps1)
+        this.logger.warn(`[OTP TEST] ${phoneNumber} => ${code} (SMS_GATEWAY_URL absent, valable 5 min)`);
+        return true;
       }
       this.logger.warn('=============================================');
       this.logger.warn(`📱 [SIMULATION SMS MADAGASCAR]`);

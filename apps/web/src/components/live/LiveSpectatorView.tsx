@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authFetch, isLoggedIn, loginUrl } from '@/lib/session';
 import { Users, X, Send, CheckCircle2, AlertCircle, ShoppingBag, Volume2 } from 'lucide-react';
 
 export interface PinnedProductData {
@@ -60,20 +61,27 @@ export function LiveSpectatorView({
     setIsOrdering(true);
 
     try {
-      const token = localStorage.getItem('ehetsena_token');
-      const res = await fetch(`/api/lives/${liveId}/flash-order`, {
+      if (!isLoggedIn()) {
+        router.push(loginUrl(`/live/${liveId}`));
+        return;
+      }
+
+      const res = await authFetch(`/api/lives/${liveId}/flash-order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ liveProductId: pinnedProduct.id }),
       });
 
+      if (res.status === 401) {
+        router.push(loginUrl(`/live/${liveId}`));
+        return;
+      }
+      if (!res.ok) throw new Error('flash-order');
+
       const data = await res.json();
       setOrderResult({
-        queuePosition: data.queuePosition || 1,
-        isWinner: data.isWinner ?? true,
+        queuePosition: data.queuePosition,
+        isWinner: data.isWinner,
       });
 
       // Vibration haptique immédiate
@@ -81,11 +89,7 @@ export function LiveSpectatorView({
         navigator.vibrate?.([80]);
       }
     } catch (err) {
-      // Simulation pour tester en local
-      setOrderResult({
-        queuePosition: 1,
-        isWinner: true,
-      });
+      alert('Nisy olana, andramo indray (Erreur, veuillez réessayer)');
     } finally {
       setIsOrdering(false);
     }

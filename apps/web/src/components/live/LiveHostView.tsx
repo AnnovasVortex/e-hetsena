@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { authFetch } from '@/lib/session';
 import {
   Radio,
   Users,
@@ -99,13 +100,9 @@ export function LiveHostView({ liveId, title, products: initialProducts }: LiveH
     );
 
     try {
-      const token = localStorage.getItem('ehetsena_token');
-      await fetch(`/api/lives/${liveId}/pin-product`, {
+      await authFetch(`/api/lives/${liveId}/pin-product`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ liveProductId }),
       });
     } catch (e) {
@@ -179,7 +176,9 @@ export function LiveHostView({ liveId, title, products: initialProducts }: LiveH
             onClick={() => {
               if (confirm('Hofaranana ve ny Live ? (Terminer le live ?)')) {
                 stopCamera();
-                router.push('/');
+                authFetch(`/api/lives/${liveId}/end`, { method: 'POST' })
+                  .catch(() => {})
+                  .finally(() => router.push('/live'));
               }
             }}
             className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/20 hover:bg-red-600 transition-colors"

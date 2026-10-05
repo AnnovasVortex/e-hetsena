@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { LiveSpectatorView, PinnedProductData } from '@/components/live/LiveSpectatorView';
 
 export default function LiveRoomPage() {
   const params = useParams();
-  const liveId = (params?.id as string) || 'demo-live';
+  const liveId = params?.id as string;
+  const [error, setError] = useState<string | null>(null);
 
   const [liveData, setLiveData] = useState<{
     host: any;
@@ -17,60 +19,33 @@ export default function LiveRoomPage() {
     fetch(`/api/lives/${liveId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) {
-          const pinned = data.products?.find((p: any) => p.isPinned) || data.products?.[0];
-          setLiveData({
-            host: data.host,
-            pinnedProduct: pinned || null,
-          });
-        } else {
-          // Démo fallback
-          setLiveData({
-            host: {
-              id: 'host-1',
-              fullName: 'Soa Fripe Madagascar',
-              city: 'Antananarivo (Analakely)',
-              avatarUrl: null,
-              trustScore: 4.9,
-            },
-            pinnedProduct: {
-              id: 'lp-1',
-              article: {
-                id: 'art-1',
-                title: 'Robe Vintage motif fleurs soie',
-                price: 25000,
-                images: [
-                  { url: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500' },
-                ],
-              },
-            },
-          });
+        if (!data) {
+          setError('Tsy hita ny Live (Live introuvable)');
+          return;
         }
-      })
-      .catch(() => {
-        // Démo fallback
+        if (data.status !== 'LIVE') {
+          setError('Efa nifarana ity Live ity (Ce live est terminé)');
+          return;
+        }
+        const pinned = data.products?.find((p: any) => p.isPinned) || data.products?.[0];
         setLiveData({
-          host: {
-            id: 'host-1',
-            fullName: 'Soa Fripe Madagascar',
-            city: 'Antananarivo (Analakely)',
-            avatarUrl: null,
-            trustScore: 4.9,
-          },
-          pinnedProduct: {
-            id: 'lp-1',
-            article: {
-              id: 'art-1',
-              title: 'Robe Vintage motif fleurs soie',
-              price: 25000,
-              images: [
-                { url: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500' },
-              ],
-            },
-          },
+          host: data.host,
+          pinnedProduct: pinned || null,
         });
-      });
+      })
+      .catch(() => setError('Tsy hita ny Live (Live introuvable)'));
   }, [liveId]);
+
+  if (error) {
+    return (
+      <div className="h-screen bg-black text-white flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-sm">{error}</p>
+        <Link href="/live" className="px-5 py-2.5 rounded-2xl bg-[#D35400] text-white text-sm font-bold">
+          Hijery Live hafa (Voir les autres lives)
+        </Link>
+      </div>
+    );
+  }
 
   if (!liveData) {
     return (

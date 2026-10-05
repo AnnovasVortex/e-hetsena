@@ -12,7 +12,7 @@ import {
   Ip,
 } from '@nestjs/common';
 import { VideosService } from './videos.service';
-import { CreateVideoUploadDto } from './dto/videos.dto';
+import { CreateCommentDto, CreateVideoUploadDto } from './dto/videos.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('videos')
@@ -58,6 +58,29 @@ export class VideosController {
   @HttpCode(HttpStatus.OK)
   async toggleLike(@Request() req: any, @Param('id') videoId: string) {
     return this.videosService.toggleLike(req.user.id, videoId);
+  }
+
+  /**
+   * Commentaires d'une vidéo
+   * GET /api/videos/:id/comments
+   */
+  @Get(':id/comments')
+  async getComments(@Param('id') videoId: string) {
+    return this.videosService.getComments(videoId);
+  }
+
+  /**
+   * Ajouter un commentaire
+   * POST /api/videos/:id/comments
+   */
+  @Post(':id/comments')
+  @UseGuards(JwtAuthGuard)
+  async addComment(
+    @Request() req: any,
+    @Param('id') videoId: string,
+    @Body() dto: CreateCommentDto
+  ) {
+    return this.videosService.addComment(req.user.id, videoId, dto.content);
   }
 
   /**

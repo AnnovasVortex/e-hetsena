@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authFetch, isLoggedIn, loginUrl } from '@/lib/session';
 import { PhotoUploader } from '@/components/article/PhotoUploader';
 import {
   CATEGORIES,
@@ -31,6 +32,11 @@ export default function SellPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Connexion requise pour vendre : on le dit tout de suite plutôt qu'après avoir rempli le formulaire
+  useEffect(() => {
+    if (!isLoggedIn()) router.replace(loginUrl('/sell'));
+  }, [router]);
+
   // Bascule pour les options de livraison
   const toggleDelivery = (method: string) => {
     if (deliveryOptions.includes(method)) {
@@ -58,9 +64,8 @@ export default function SellPage() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('ehetsena_token');
-      if (!token) {
-        router.push('/login');
+      if (!isLoggedIn()) {
+        router.push(loginUrl('/sell'));
         return;
       }
 
@@ -70,12 +75,15 @@ export default function SellPage() {
         const formData = new FormData();
         formData.append('photo', file);
 
-        const uploadRes = await fetch('/api/articles/upload-photo', {
+        const uploadRes = await authFetch('/api/articles/upload-photo', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
 
+        if (uploadRes.status === 401) {
+          router.push(loginUrl('/sell'));
+          return;
+        }
         if (!uploadRes.ok) {
           throw new Error("Tsy tafakatra ny sary (Échec de l'envoi de la photo)");
         }
@@ -85,12 +93,9 @@ export default function SellPage() {
       }
 
       // 2. Création de l'annonce dans la base de données
-      const createRes = await fetch('/api/articles', {
+      const createRes = await authFetch('/api/articles', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
@@ -106,8 +111,9 @@ export default function SellPage() {
       });
 
       if (!createRes.ok) {
-        const errData = await createRes.json();
-        throw new Error(errData.message || 'Tsy vita ny famoahana (Erreur de publication)');
+        const errData = await createRes.json().catch(() => ({}));
+        const message = Array.isArray(errData.message) ? errData.message[0] : errData.message;
+        throw new Error(message || 'Tsy vita ny famoahana (Erreur de publication)');
       }
 
       const createdArticle = await createRes.json();

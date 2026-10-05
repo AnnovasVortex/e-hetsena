@@ -130,6 +130,20 @@ export class ArticlesService {
   }
 
   /**
+   * Annonces d'un vendeur (hors annonces supprimées), pour son profil et la préparation d'un live
+   */
+  async findBySeller(sellerId: string) {
+    return this.prisma.article.findMany({
+      where: { sellerId, status: { not: ArticleStatus.REMOVED } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+      },
+    });
+  }
+
+  /**
    * Récupère un article par son ID (Fiche détaillée)
    */
   async findOne(id: string) {

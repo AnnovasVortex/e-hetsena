@@ -9,6 +9,7 @@ import { ArticleGrid, ArticleCardItem } from '@/components/home/ArticleGrid';
 import { useEcoData } from '@/context/EcoDataContext';
 import { Flame, Compass, Play } from 'lucide-react';
 import Link from 'next/link';
+import { toArticleCard } from '@/lib/articles';
 
 type HomeTab = 'FOR_YOU' | 'EXPLORE';
 
@@ -26,100 +27,15 @@ export default function HomePage() {
     fetch('/api/lives/active')
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setLives(data))
-      .catch(() => {
-        // Fallback démo pour tester sans base
-        setLives([
-          {
-            id: 'live-1',
-            title: 'Arrivage Friperie Suisse Crème',
-            hostName: 'Soa Fripe Tana',
-            hostCity: 'Antananarivo',
-            viewersCount: 42,
-          },
-          {
-            id: 'live-2',
-            title: 'Artisanat & Vannerie Raphia',
-            hostName: 'Malagasy Deco',
-            hostCity: 'Tamatave',
-            viewersCount: 19,
-          },
-        ]);
-      });
+      .catch(() => setLives([]));
 
     // 2. Récupération des articles de la grille
     setIsLoadingArticles(true);
     const catQuery = selectedCategory ? `?category=${selectedCategory}` : '';
     fetch(`/api/articles${catQuery}`)
       .then((res) => (res.ok ? res.json() : { items: [] }))
-      .then((data) => {
-        if (data.items && data.items.length > 0) {
-          const mapped: ArticleCardItem[] = data.items.map((art: any) => ({
-            id: art.id,
-            title: art.title,
-            price: art.price,
-            city: art.city,
-            size: art.size,
-            condition: art.condition,
-            imageUrl: art.images?.[0]?.url || 'https://picsum.photos/400/500',
-            hasVideo: !!art.video,
-            seller: {
-              id: art.seller.id,
-              fullName: art.seller.fullName,
-              avatarUrl: art.seller.avatarUrl,
-              trustScore: art.seller.trustScore,
-            },
-          }));
-          setArticles(mapped);
-        } else {
-          // Articles démo pour l'affichage initial
-          setArticles([
-            {
-              id: 'art-1',
-              title: 'Veste Jean Vintage oversize',
-              price: 35000,
-              city: 'Antananarivo (Analakely)',
-              size: 'L',
-              condition: 'VERY_GOOD_STATE',
-              imageUrl: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=500&q=80',
-              hasVideo: true,
-              seller: { id: 's1', fullName: 'Fanja Mode', trustScore: 4.9 },
-            },
-            {
-              id: 'art-2',
-              title: 'Sac artisanal en Raphia tressé main',
-              price: 20000,
-              city: 'Toamasina',
-              size: null,
-              condition: 'NEW_WITH_TAG',
-              imageUrl: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=500&q=80',
-              hasVideo: false,
-              seller: { id: 's2', fullName: 'Kanto Craft', trustScore: 5.0 },
-            },
-            {
-              id: 'art-3',
-              title: 'Baskets Nike Air Max 90 originales',
-              price: 120000,
-              city: 'Antsirabe',
-              size: '42',
-              condition: 'GOOD_STATE',
-              imageUrl: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=500&q=80',
-              hasVideo: true,
-              seller: { id: 's3', fullName: 'Kicks MG', trustScore: 4.8 },
-            },
-            {
-              id: 'art-4',
-              title: 'Robe d été fleurie légère',
-              price: 18000,
-              city: 'Mahajanga',
-              size: 'M',
-              condition: 'VERY_GOOD_STATE',
-              imageUrl: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500&q=80',
-              hasVideo: false,
-              seller: { id: 's4', fullName: 'Aina Shop', trustScore: 4.7 },
-            },
-          ]);
-        }
-      })
+      .then((data) => setArticles((data.items || []).map(toArticleCard)))
+      .catch(() => setArticles([]))
       .finally(() => setIsLoadingArticles(false));
   }, [selectedCategory]);
 

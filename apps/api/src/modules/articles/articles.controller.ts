@@ -72,6 +72,16 @@ export class ArticlesController {
   }
 
   /**
+   * Annonces du vendeur connecté (déclarée avant :id pour ne pas être capturée)
+   * GET /api/articles/mine
+   */
+  @Get('mine')
+  @UseGuards(JwtAuthGuard)
+  async findMine(@Request() req: any) {
+    return this.articlesService.findBySeller(req.user.id);
+  }
+
+  /**
    * 4. Fiche détaillée d'un article
    * GET /api/articles/:id
    */

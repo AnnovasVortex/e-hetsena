@@ -23,6 +23,22 @@ export function OtpStep({
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [timer, setTimer] = useState<number>(60);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // Dernier code envoyé : évite de renvoyer le même code (chaque essai compte, 5 max)
+  const lastSubmittedRef = useRef<string | null>(null);
+
+  const submit = (code: string) => {
+    if (isLoading || code === lastSubmittedRef.current) return;
+    lastSubmittedRef.current = code;
+    onVerify(code);
+  };
+
+  // Code refusé : on vide les cases pour une nouvelle saisie propre
+  useEffect(() => {
+    if (!error) return;
+    setDigits(['', '', '', '', '', '']);
+    lastSubmittedRef.current = null;
+    inputRefs.current[0]?.focus();
+  }, [error]);
 
   // Compte à rebours de 60s
   useEffect(() => {
@@ -35,18 +51,19 @@ export function OtpStep({
 
   // Gestion de la frappe dans les 6 cases
   const handleChange = (index: number, value: string) => {
-    // Si l'utilisateur colle un code complet à 6 chiffres
-    if (value.length > 1) {
-      const cleanValue = value.replace(/\D/g, '').slice(0, 6);
-      const newDigits = cleanValue.split('').concat(Array(6).fill('')).slice(0, 6);
-      setDigits(newDigits);
-      if (cleanValue.length === 6) {
-        onVerify(cleanValue);
-      }
+    const cleanValue = value.replace(/\D/g, '');
+
+    // Code complet collé ou proposé par le clavier (SMS)
+    if (cleanValue.length >= 6) {
+      const code = cleanValue.slice(0, 6);
+      setDigits(code.split(''));
+      inputRefs.current[5]?.focus();
+      submit(code);
       return;
     }
 
-    const cleanChar = value.replace(/\D/g, '');
+    // Case déjà remplie : le nouveau chiffre tapé remplace l'ancien
+    const cleanChar = cleanValue.slice(-1);
     const newDigits = [...digits];
     newDigits[index] = cleanChar;
     setDigits(newDigits);
@@ -59,7 +76,7 @@ export function OtpStep({
     // Soumission automatique dès que les 6 chiffres sont remplis
     const fullCode = newDigits.join('');
     if (fullCode.length === 6 && !newDigits.includes('')) {
-      onVerify(fullCode);
+      submit(fullCode);
     }
   };
 
@@ -111,8 +128,9 @@ export function OtpStep({
             }}
             type="text"
             inputMode="numeric"
-            maxLength={1}
+            autoComplete={index === 0 ? 'one-time-code' : 'off'}
             value={digit}
+            onFocus={(e) => e.target.select()}
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             className="w-12 h-14 text-center text-2xl font-bold font-mono bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-100 rounded-2xl border-2 border-stone-200 dark:border-stone-700 focus:border-[#D35400] focus:ring-0 focus:outline-none transition-all"
@@ -132,7 +150,10 @@ export function OtpStep({
       <button
         type="button"
         disabled={isLoading || digits.join('').length < 6}
-        onClick={() => onVerify(digits.join(''))}
+        onClick={() => {
+          lastSubmittedRef.current = null;
+          submit(digits.join(''));
+        }}
         className="w-full py-3.5 px-4 bg-[#D35400] hover:bg-[#B94600] active:scale-[0.98] disabled:opacity-50 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-orange-900/10 transition-all cursor-pointer mb-4"
       >
         {isLoading ? (

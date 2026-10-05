@@ -3,6 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { HlsPlayer } from './HlsPlayer';
 import { QuickBuyDrawer } from './QuickBuyDrawer';
+import { CommentsDrawer } from './CommentsDrawer';
+import { authFetch } from '@/lib/session';
 import { Heart, MessageCircle, Share2, Plus, ShoppingBag, MapPin } from 'lucide-react';
 
 export interface FeedVideoData {
@@ -42,6 +44,8 @@ export function VideoFeedItem({ video, isActive }: VideoFeedItemProps) {
   const [likesCount, setLikesCount] = useState(video.likesCount);
   const [showHeartPop, setShowHeartPop] = useState(false);
   const [isBuyDrawerOpen, setIsBuyDrawerOpen] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(video.commentsCount || 0);
   const lastTapRef = useRef<number>(0);
 
   // Gestion du double-tap sur l'écran pour liker (façon TikTok)
@@ -68,11 +72,7 @@ export function VideoFeedItem({ video, isActive }: VideoFeedItemProps) {
     setLikesCount((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
 
     try {
-      const token = localStorage.getItem('ehetsena_token');
-      await fetch(`/api/videos/${video.id}/like`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await authFetch(`/api/videos/${video.id}/like`, { method: 'POST' });
     } catch (e) {
       // Ignoré en local
     }
@@ -108,7 +108,7 @@ export function VideoFeedItem({ video, isActive }: VideoFeedItemProps) {
   return (
     <div
       onClick={handleScreenTouch}
-      className="relative w-full h-[calc(100vh-64px)] snap-start snap-always overflow-hidden bg-black select-none"
+      className="relative w-full h-full snap-start snap-always overflow-hidden bg-black select-none"
     >
       {/* 1. Lecteur Vidéo plein écran */}
       <HlsPlayer
@@ -174,15 +174,16 @@ export function VideoFeedItem({ video, isActive }: VideoFeedItemProps) {
         {/* Bouton Commentaires */}
         <button
           type="button"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsCommentsOpen(true);
+          }}
           className="flex flex-col items-center gap-0.5 group active:scale-90 transition-transform"
         >
           <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-xs flex items-center justify-center">
             <MessageCircle className="w-6 h-6 stroke-[2]" />
           </div>
-          <span className="text-[11px] font-bold drop-shadow-md">
-            {video.commentsCount || 0}
-          </span>
+          <span className="text-[11px] font-bold drop-shadow-md">{commentsCount}</span>
         </button>
 
         {/* Bouton Partage */}
@@ -239,6 +240,14 @@ export function VideoFeedItem({ video, isActive }: VideoFeedItemProps) {
           </button>
         </div>
       </div>
+
+      {/* Tiroir des commentaires */}
+      <CommentsDrawer
+        videoId={video.id}
+        isOpen={isCommentsOpen}
+        onClose={() => setIsCommentsOpen(false)}
+        onCommentAdded={() => setCommentsCount((n) => n + 1)}
+      />
 
       {/* 6. Tiroir d'achat sans quitter la vidéo */}
       <QuickBuyDrawer

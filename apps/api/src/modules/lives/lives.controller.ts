@@ -72,6 +72,17 @@ export class LivesController {
   }
 
   /**
+   * Terminer le live (Vendeur uniquement)
+   * POST /api/lives/:id/end
+   */
+  @Post(':id/end')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async endLive(@Request() req: any, @Param('id') id: string) {
+    return this.livesService.endLive(req.user.id, id);
+  }
+
+  /**
    * 6. Commande Flash : « Raisiko ! / Je prends ! »
    * POST /api/lives/:id/flash-order
    */

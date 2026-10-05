@@ -227,6 +227,44 @@ export class VideosService {
   }
 
   /**
+   * Commentaires d'une vidéo (les plus récents d'abord)
+   */
+  async getComments(videoId: string) {
+    return this.prisma.comment.findMany({
+      where: { videoId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        user: { select: { id: true, fullName: true, avatarUrl: true } },
+      },
+    });
+  }
+
+  /**
+   * Ajout d'un commentaire avec mise à jour atomique du compteur
+   */
+  async addComment(userId: string, videoId: string, content: string) {
+    const video = await this.prisma.video.findUnique({ where: { id: videoId } });
+    if (!video) {
+      throw new NotFoundException('Vidéo introuvable');
+    }
+
+    const [comment] = await this.prisma.$transaction([
+      this.prisma.comment.create({
+        data: { userId, videoId, content: content.trim() },
+        include: {
+          user: { select: { id: true, fullName: true, avatarUrl: true } },
+        },
+      }),
+      this.prisma.video.update({
+        where: { id: videoId },
+        data: { commentsCount: { increment: 1 } },
+      }),
+    ]);
+    return comment;
+  }
+
+  /**
    * 5. Enregistrement dédoublonné des vues (anti-triche)
    */
   async recordView(videoId: string, ipAddress: string, userId?: string) {
